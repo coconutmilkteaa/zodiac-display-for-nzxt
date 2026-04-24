@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=640, initial-scale=1.0">
+<title>Zodiac Display — Customizable</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Playfair+Display:ital,wght@1,700&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Bagel+Fat+One&family=Fredoka:wght@600;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { min-width:640px; min-height:640px; width:100%; height:100%; overflow:hidden; background:#000; }
+  body { display:flex; align-items:center; justify-content:center; }
+
+  .screen {
+    width:640px; height:640px; border-radius:50%;
+    background: var(--bg-gradient);
+    position:relative; overflow:hidden;
+    transition: background 0.8s ease;
+  }
+
+  /* ─── GLOWING RING ─── */
+  .glow-ring{
+    position:absolute;top:50%;left:50%;
+    width:640px;height:640px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    pointer-events:none;
+    z-index:20;
+    box-shadow:
+      0 0 0 2px var(--ring-color, rgba(255,180,220,0.9)),
+      0 0 20px 4px var(--ring-glow, rgba(255,160,210,0.8)),
+      0 0 40px 8px var(--ring-glow-outer, rgba(255,140,200,0.5)),
+      inset 0 0 30px 4px var(--ring-inner, rgba(255,180,220,0.35));
+    animation:ringPulse 4s ease-in-out infinite;
+  }
+  @keyframes ringPulse{
+    0%,100%{opacity:0.85;}
+    50%{opacity:1;}
+  }
+
+  .dream-overlay {
+    position:absolute; inset:0; border-radius:50%;
+    background:radial-gradient(ellipse at 50% 40%, rgba(255,240,248,0.3) 0%, transparent 65%);
+    pointer-events:none; z-index:2;
+  }
+
+  .sparkle{position:absolute;border-radius:50%;animation:twinkle ease-in-out infinite;pointer-events:none;z-index:5;}
+  @keyframes twinkle{0%,100%{opacity:0.05;transform:scale(0.3);}50%{opacity:0.8;transform:scale(1);}}
+
+  /* rising stardust — stars float up from bottom and fade */
+  .rising-star{
+    position:absolute;
+    pointer-events:none;
+    z-index:5;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:
+      0 0 4px rgba(255,255,255,0.9),
+      0 0 8px var(--glow-strong),
+      0 0 14px var(--glow-medium);
+    opacity:0;
+    animation:riseUp linear infinite;
+  }
+  @keyframes riseUp{
+    0%   { transform:translateY(0) scale(0.4); opacity:0; }
+    8%   { opacity:0.9; }
+    30%  { transform:translateY(-80px) scale(1); opacity:1; }
+    65%  { opacity:0.7; }
+    100% { transform:translateY(var(--rise-dist)) scale(0.2); opacity:0; }
+  }
+  /* 4-point sparkle version */
+  .rising-sparkle{
+    position:absolute;
+    pointer-events:none;
+    z-index:5;
+    opacity:0;
+    animation:riseUp linear infinite;
+    color:#fff;
+    text-shadow:
+      0 0 6px rgba(255,255,255,0.9),
+      0 0 12px var(--glow-strong),
+      0 0 20px var(--glow-medium);
+    font-family:serif;
+  }
+
+  .shoot {
+    position:absolute; pointer-events:none; z-index:6;
+    width:var(--len); height:1.5px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.9), var(--glow-soft), transparent);
+    border-radius:2px;
+    transform:rotate(var(--angle));
+    transform-origin:left center;
+    animation:shootAcross linear infinite;
+    animation-duration:var(--dur);
+    animation-delay:var(--delay);
+    opacity:0;
+    filter:drop-shadow(0 0 3px var(--glow-soft));
+  }
+  .shoot::after {
+    content:'';
+    position:absolute; right:-3px; top:50%;
+    transform:translateY(-50%);
+    width:4px; height:4px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 0 6px var(--glow-strong), 0 0 12px var(--glow-medium);
+  }
+  @keyframes shootAcross {
+    0%   { opacity:0; transform:rotate(var(--angle)) translateX(0); }
+    5%   { opacity:1; }
+    70%  { opacity:0.8; }
+    100% { opacity:0; transform:rotate(var(--angle)) translateX(var(--travel)); }
+  }
+
+  .deco{position:absolute;z-index:6;pointer-events:none;font-family:'Cormorant Garamond',serif;animation:decoFade ease-in-out infinite;color:rgba(255,255,255,0.6);}
+  @keyframes decoFade{0%,100%{opacity:0.2;transform:scale(0.9);}50%{opacity:0.7;transform:scale(1);}}
+
+  .petal{position:absolute;pointer-events:none;z-index:4;border-radius:50% 0 50% 0;animation:petalFloat ease-in-out infinite;}
+  @keyframes petalFloat{0%,100%{transform:rotate(var(--r)) translateY(0);opacity:0.5;}50%{transform:rotate(calc(var(--r) + 10deg)) translateY(-5px);opacity:0.75;}}
+
+  .bow-wrap{position:absolute;top:22px;left:50%;transform:translateX(-50%);z-index:15;width:110px;height:54px;animation:bowPulse 4s ease-in-out infinite;filter:drop-shadow(0 0 8px var(--glow-medium));}
+  @keyframes bowPulse{0%,100%{opacity:0.85;}50%{opacity:1;}}
+
+  .sign-row{
+    position:absolute;top:64px;left:50%;transform:translateX(-50%);
+    z-index:12;text-align:center;white-space:nowrap;
+    font-family:'Bagel Fat One', 'Fredoka', sans-serif;
+    font-size:32px;font-weight:400;letter-spacing:2px;
+    text-transform:lowercase;
+    line-height:1;
+    /* chrome gradient — light hits the upper rounded surfaces of each letter */
+    background:linear-gradient(
+      180deg,
+      var(--chrome-mid) 0%,
+      var(--chrome-light) 18%,
+      #ffffff 32%,
+      #ffffff 42%,
+      var(--chrome-light) 55%,
+      var(--chrome-mid) 68%,
+      var(--chrome-dark) 82%,
+      var(--chrome-deep) 100%
+    );
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    color:transparent;
+    /* crisp outline + strong drop shadow for contrast against the aura */
+    filter:
+      drop-shadow(0 0 1px rgba(255,255,255,0.9))
+      drop-shadow(0 2px 3px var(--chrome-shadow))
+      drop-shadow(0 4px 8px rgba(0,0,0,0.25))
+      drop-shadow(0 0 12px var(--glow-strong));
+  }
+  /* natural glossy highlights — light hitting curved surfaces */
+  .sign-row::before{
+    content:attr(data-name);
+    position:absolute;top:0;left:0;right:0;
+    background:
+      /* bright band where light hits the upper curves */
+      linear-gradient(
+        175deg,
+        transparent 15%,
+        rgba(255,255,255,0.95) 28%,
+        rgba(255,255,255,1) 35%,
+        rgba(255,255,255,0.4) 45%,
+        transparent 55%,
+        transparent 100%
+      );
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    color:transparent;
+    pointer-events:none;
+    mix-blend-mode:screen;
+  }
+  /* chromatic aberration edge — now reacts to color picker */
+  .sign-row::after{
+    content:attr(data-name);
+    position:absolute;top:0;left:0;right:0;
+    color:transparent;
+    -webkit-text-stroke:1px var(--chrome-edge);
+    text-shadow:
+      1px 0 0 var(--chrome-edge-r),
+      -1px 0 0 var(--chrome-edge-l),
+      0 0 10px var(--glow-strong);
+    pointer-events:none;
+    z-index:-1;
+  }
+
+  .clock-area{position:absolute;top:103px;left:50%;transform:translateX(-50%);z-index:12;text-align:center;width:440px;}
+  .big-clock{
+    font-family:'Playfair Display',serif;font-size:54px;font-style:italic;font-weight:700;
+    color:#fff;letter-spacing:4px;line-height:1;
+    text-shadow:0 0 8px #fff, 0 0 20px var(--glow-strong), 0 0 40px var(--glow-medium), 0 0 80px var(--glow-deep);
+  }
+  .date-line{
+    font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:300;
+    color:rgba(255,255,255,0.9);letter-spacing:4px;margin-top:3px;
+    text-transform:uppercase;font-style:italic;
+    text-shadow:0 0 5px #fff, 0 0 12px var(--glow-strong);
+  }
+
+  .h-rule{position:absolute;left:50%;transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+  .h-rule-line{width:60px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5));}
+  .h-rule-line.r{background:linear-gradient(270deg,transparent,rgba(255,255,255,0.5));}
+  .h-rule-sym{font-family:'Cormorant Garamond',serif;font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:2px;}
+
+  .stat-card{position:absolute;z-index:12;display:flex;flex-direction:column;gap:4px;background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);border-radius:14px;padding:10px 14px;}
+  .card-label{font-family:'Bodoni Moda',serif;font-style:italic;font-weight:700;font-size:13px;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-shadow:0 0 6px #fff, 0 0 14px var(--glow-strong), 0 0 28px var(--glow-medium);}
+  .card-val{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:44px;color:#fff;line-height:1;text-shadow:0 0 6px #fff, 0 0 16px var(--glow-strong), 0 0 32px var(--glow-medium), 0 0 60px var(--glow-deep);}
+  .card-unit{font-family:'Bodoni Moda',serif;font-style:italic;font-size:18px;color:rgba(255,255,255,0.9);text-shadow:0 0 5px #fff, 0 0 12px var(--glow-strong);}
+  .card-sub{font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:300;font-style:italic;color:rgba(255,255,255,0.85);text-shadow:0 0 5px #fff, 0 0 10px var(--glow-strong);}
+  .card-bar{display:flex;gap:2px;margin-top:3px;}
+  .seg{width:10px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);transition:background 0.7s;}
+
+  /* Liquid card stays smaller so it doesn't overlap the chart */
+  .card-liq{padding:7px 10px;border-radius:12px;gap:3px;}
+  .card-liq .card-label{font-size:11px;letter-spacing:4px;}
+  .card-liq .card-val{font-size:36px;}
+  .card-liq .card-unit{font-size:15px;}
+  .card-liq .seg{width:8px;height:3px;}
+  .seg.c{background:rgba(255,255,255,0.85);box-shadow:0 0 4px rgba(255,200,220,0.8);}
+  .seg.g{background:rgba(255,220,180,0.85);box-shadow:0 0 4px rgba(255,220,160,0.8);}
+  .seg.l{background:rgba(180,210,255,0.85);box-shadow:0 0 4px rgba(160,200,255,0.8);}
+
+  .card-cpu{left:34px;top:222px;align-items:flex-start;}
+  .card-gpu{right:34px;top:222px;align-items:flex-end;}
+  .card-liq{bottom:88px;left:50%;transform:translateX(-50%);align-items:center;}
+
+  /* ─── MOON COUNTDOWN ─── */
+  .moon-card{
+    position:absolute;top:152px;left:34px;z-index:12;
+    display:flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);
+    border-radius:14px;padding:7px 11px 7px 8px;
+    border:1px solid rgba(255,255,255,0.22);
+  }
+  .moon-icon{
+    width:28px;height:28px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .moon-icon svg{
+    width:100%;height:100%;
+    filter:drop-shadow(0 0 6px rgba(255,255,255,0.9)) drop-shadow(0 0 12px var(--glow-strong));
+  }
+  .moon-text{display:flex;flex-direction:column;gap:1px;line-height:1;}
+  .moon-label{
+    font-family:'Bodoni Moda',serif;font-style:italic;
+    font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
+    color:rgba(255,255,255,0.9);
+    text-shadow:0 0 5px #fff, 0 0 10px var(--glow-strong);
+  }
+  .moon-val{
+    font-family:'Playfair Display',serif;font-style:italic;font-weight:700;
+    font-size:18px;color:#fff;line-height:1;
+    text-shadow:0 0 5px #fff, 0 0 12px var(--glow-strong), 0 0 24px var(--glow-medium);
+  }
+  .moon-unit{
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:10px;color:rgba(255,255,255,0.85);
+    text-shadow:0 0 5px #fff, 0 0 10px var(--glow-strong);
+  }
+
+  .chart-wrap{position:absolute;top:204px;left:50%;transform:translateX(-50%);z-index:11;}
+
+  .ticker-wrap{position:absolute;bottom:50px;left:64px;right:64px;overflow:hidden;z-index:12;padding:4px 0;border-top:1px solid rgba(255,255,255,0.25);border-bottom:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);backdrop-filter:blur(4px);}
+  .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 45s linear infinite;}
+  @keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+  .ticker-text{font-family:'Cormorant Garamond',serif;font-size:12px;color:rgba(255,255,255,0.95);letter-spacing:1px;font-style:italic;padding-right:50px;text-shadow:0 0 6px #fff, 0 0 14px var(--glow-strong);}
+
+  .angels{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-family:'Cormorant Garamond',serif;font-size:10px;color:rgba(255,255,255,0.8);letter-spacing:4px;font-style:italic;z-index:12;white-space:nowrap;text-shadow:0 0 6px #fff, 0 0 14px var(--glow-strong);}
+
+  /* ─── SETTINGS BUTTON ─── */
+  .settings-btn{
+    position:fixed;top:20px;right:20px;z-index:200;
+    width:44px;height:44px;border-radius:50%;
+    background:linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.5);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:all 0.3s ease;
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.2),
+      0 0 20px rgba(255,200,230,0.4);
+  }
+  .settings-btn:hover{
+    background:linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2));
+    transform:rotate(72deg) scale(1.08);
+    box-shadow:
+      0 4px 20px rgba(0,0,0,0.25),
+      0 0 30px rgba(255,200,230,0.7);
+  }
+  .settings-btn svg{
+    width:22px;height:22px;
+    filter:drop-shadow(0 0 4px rgba(255,255,255,0.9)) drop-shadow(0 0 8px rgba(255,180,220,0.8));
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);
+    display:none;align-items:center;justify-content:center;
+    animation:fadeIn 0.3s ease;
+  }
+  .modal-overlay.active{display:flex;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+  .modal{
+    width:420px;max-height:580px;overflow-y:auto;
+    background:linear-gradient(135deg, rgba(40,20,50,0.95), rgba(60,30,70,0.95));
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:20px;padding:24px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5), 0 0 60px var(--glow-medium);
+    color:#fff;font-family:'Cormorant Garamond',serif;
+    animation:slideUp 0.4s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+  .modal::-webkit-scrollbar{width:6px;}
+  .modal::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:3px;}
+  .modal::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.3);border-radius:3px;}
+
+  .modal-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:20px;padding-bottom:14px;
+    border-bottom:1px solid rgba(255,255,255,0.2);
+  }
+  .modal-title{
+    font-family:'Cinzel Decorative',serif;font-size:18px;font-weight:700;
+    letter-spacing:3px;text-transform:uppercase;
+    text-shadow:0 0 8px var(--glow-strong);
+  }
+  .modal-close{
+    background:none;border:none;color:#fff;font-size:24px;cursor:pointer;
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:background 0.2s;
+  }
+  .modal-close:hover{background:rgba(255,255,255,0.15);}
+
+  .section{margin-bottom:22px;}
+  .section-label{
+    font-family:'Bodoni Moda',serif;font-style:italic;
+    font-size:11px;letter-spacing:3px;text-transform:uppercase;
+    color:rgba(255,255,255,0.9);margin-bottom:10px;
+    text-shadow:0 0 6px var(--glow-strong);
+  }
+
+  .sign-grid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:6px;
+  }
+  .sign-opt{
+    aspect-ratio:1;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:all 0.25s ease;
+    font-family:serif;
+    padding:4px;
+  }
+  .sign-opt:hover{background:rgba(255,255,255,0.18);transform:translateY(-2px);}
+  .sign-opt.active{
+    background:rgba(255,255,255,0.28);
+    border-color:rgba(255,255,255,0.7);
+    box-shadow:0 0 12px var(--glow-medium);
+  }
+  .sign-opt .sym{font-size:18px;line-height:1;}
+  .sign-opt .nm{font-size:8px;letter-spacing:1px;margin-top:3px;opacity:0.85;text-transform:uppercase;}
+
+  .icon-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  }
+  .icon-opt{
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:all 0.25s ease;
+    padding:8px 4px;
+  }
+  .icon-opt:hover{background:rgba(255,255,255,0.18);transform:translateY(-2px);}
+  .icon-opt.active{
+    background:rgba(255,255,255,0.28);
+    border-color:rgba(255,255,255,0.7);
+    box-shadow:0 0 12px var(--glow-medium);
+  }
+  .icon-preview{
+    width:60px;height:30px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-preview svg{width:100%;height:100%;}
+  .icon-nm{
+    font-size:9px;letter-spacing:1px;margin-top:4px;
+    opacity:0.85;text-transform:uppercase;
+    font-family:'Bodoni Moda',serif;font-style:italic;
+  }
+
+  .preset-row{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  }
+  .preset{
+    height:44px;border-radius:10px;cursor:pointer;
+    border:1px solid rgba(255,255,255,0.2);
+    transition:all 0.25s ease;position:relative;overflow:hidden;
+  }
+  .preset:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.5);}
+  .preset.active{border-color:rgba(255,255,255,0.9);box-shadow:0 0 12px rgba(255,255,255,0.4);}
+  .preset-name{
+    position:absolute;bottom:2px;left:0;right:0;
+    font-size:8px;text-align:center;letter-spacing:1px;
+    color:rgba(255,255,255,0.95);
+    text-shadow:0 1px 2px rgba(0,0,0,0.7);
+    font-family:'Bodoni Moda',serif;text-transform:uppercase;
+  }
+
+  .slider-group{display:flex;flex-direction:column;gap:12px;}
+  .slider-row{display:flex;flex-direction:column;gap:6px;}
+  .slider-header{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'Bodoni Moda',serif;font-style:italic;
+    font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  }
+  .slider-val{
+    font-family:'Playfair Display',serif;font-size:12px;
+    background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:6px;
+    min-width:40px;text-align:center;
+  }
+  .color-preview{
+    width:100%;height:28px;border-radius:8px;
+    border:1px solid rgba(255,255,255,0.25);
+    margin-bottom:8px;
+    box-shadow:inset 0 0 8px rgba(0,0,0,0.2);
+  }
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:6px;border-radius:3px;
+    background:rgba(255,255,255,0.15);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:#fff;cursor:pointer;
+    box-shadow:0 0 8px var(--glow-medium);
+    border:2px solid rgba(255,255,255,0.8);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;
+    background:#fff;cursor:pointer;border:2px solid rgba(255,255,255,0.8);
+    box-shadow:0 0 8px var(--glow-medium);
+  }
+
+  .slider-r::-webkit-slider-thumb{box-shadow:0 0 8px rgba(255,120,120,0.8);}
+  .slider-g::-webkit-slider-thumb{box-shadow:0 0 8px rgba(120,255,120,0.8);}
+  .slider-b::-webkit-slider-thumb{box-shadow:0 0 8px rgba(120,120,255,0.8);}
+
+  .color-tabs{
+    display:flex;gap:6px;margin-bottom:10px;
+  }
+  .color-tab{
+    flex:1;padding:6px 4px;font-size:9px;letter-spacing:1.2px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff;border-radius:8px;cursor:pointer;
+    font-family:'Bodoni Moda',serif;font-style:italic;
+    text-transform:uppercase;transition:all 0.2s;
+  }
+  .color-tab.active{background:rgba(255,255,255,0.25);border-color:rgba(255,255,255,0.6);}
+
+  .reset-btn{
+    width:100%;margin-top:8px;padding:10px;
+    background:rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff;border-radius:10px;cursor:pointer;
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:13px;letter-spacing:2px;text-transform:uppercase;
+    transition:all 0.25s;
+  }
+  .reset-btn:hover{background:rgba(255,255,255,0.2);}
+
+  .save-indicator{
+    text-align:center;margin-top:8px;
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:11px;letter-spacing:2px;
+    color:rgba(255,255,255,0.6);
+    opacity:0;transition:opacity 0.3s;
+  }
+  .save-indicator.visible{opacity:1;}
+</style>
+</head>
+<body>
+<!-- ⭐ settings button (outside circular screen so it's always visible) -->
+<div class="settings-btn" id="settingsBtn" title="Customize">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="starGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="50%" stop-color="#ffd4e8"/>
+        <stop offset="100%" stop-color="#e8b0d8"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 1.5 L13.8 9.2 L21.5 9.5 L15.4 14.1 L17.6 21.5 L12 17 L6.4 21.5 L8.6 14.1 L2.5 9.5 L10.2 9.2 Z"
+          fill="url(#starGrad)"
+          stroke="#ffffff"
+          stroke-width="0.8"
+          stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<!-- screen container with glow ring -->
+<div style="position:relative;width:640px;height:640px;">
+  <div class="glow-ring"></div>
+  <div class="screen" id="screen">
+    <div class="dream-overlay"></div>
+
+  <!-- twinkles -->
+  <div class="sparkle" style="width:3px;height:3px;background:#fff;top:140px;left:120px;animation-duration:2.4s;animation-delay:0s;"></div>
+  <div class="sparkle" style="width:2px;height:2px;background:#fff;top:160px;left:500px;animation-duration:1.9s;animation-delay:0.8s;"></div>
+  <div class="sparkle" style="width:3px;height:3px;background:#fff;top:480px;left:140px;animation-duration:2.6s;animation-delay:1.2s;"></div>
+  <div class="sparkle" style="width:2px;height:2px;background:#fff;top:490px;left:490px;animation-duration:2.1s;animation-delay:0.4s;"></div>
+  <div class="sparkle" style="width:3px;height:3px;background:#fff;top:300px;left:20px;animation-duration:2.8s;animation-delay:1.6s;"></div>
+  <div class="sparkle" style="width:2px;height:2px;background:#fff;top:310px;left:610px;animation-duration:1.7s;animation-delay:0.2s;"></div>
+
+  <!-- rising stardust — dots -->
+  <div class="rising-star" style="width:3px;height:3px;left:90px;  top:600px;--rise-dist:-320px;animation-duration:7s;animation-delay:0s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:140px; top:610px;--rise-dist:-280px;animation-duration:8s;animation-delay:1.5s;"></div>
+  <div class="rising-star" style="width:4px;height:4px;left:190px; top:595px;--rise-dist:-360px;animation-duration:6.5s;animation-delay:2.8s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:240px; top:615px;--rise-dist:-260px;animation-duration:9s;animation-delay:0.8s;"></div>
+  <div class="rising-star" style="width:3px;height:3px;left:295px; top:605px;--rise-dist:-340px;animation-duration:7.5s;animation-delay:3.2s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:350px; top:612px;--rise-dist:-290px;animation-duration:8.5s;animation-delay:1.8s;"></div>
+  <div class="rising-star" style="width:4px;height:4px;left:400px; top:598px;--rise-dist:-370px;animation-duration:7s;animation-delay:4s;"></div>
+  <div class="rising-star" style="width:3px;height:3px;left:450px; top:608px;--rise-dist:-310px;animation-duration:8s;animation-delay:2.2s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:500px; top:615px;--rise-dist:-270px;animation-duration:9.5s;animation-delay:0.5s;"></div>
+  <div class="rising-star" style="width:3px;height:3px;left:550px; top:602px;--rise-dist:-330px;animation-duration:7.2s;animation-delay:3.5s;"></div>
+
+  <!-- second wave — slightly higher starting points, smaller -->
+  <div class="rising-star" style="width:2px;height:2px;left:115px; top:570px;--rise-dist:-280px;animation-duration:6s;animation-delay:2s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:215px; top:565px;--rise-dist:-300px;animation-duration:7s;animation-delay:4.5s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:320px; top:575px;--rise-dist:-260px;animation-duration:8s;animation-delay:1.2s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:425px; top:568px;--rise-dist:-320px;animation-duration:6.5s;animation-delay:3s;"></div>
+  <div class="rising-star" style="width:2px;height:2px;left:525px; top:572px;--rise-dist:-290px;animation-duration:7.5s;animation-delay:5s;"></div>
+
+  <!-- 4-point sparkles mixed in -->
+  <div class="rising-sparkle" style="font-size:10px;left:160px;top:605px;--rise-dist:-340px;animation-duration:8s;animation-delay:0.4s;">✦</div>
+  <div class="rising-sparkle" style="font-size:8px; left:275px;top:612px;--rise-dist:-300px;animation-duration:9s;animation-delay:2.5s;">✦</div>
+  <div class="rising-sparkle" style="font-size:11px;left:380px;top:600px;--rise-dist:-360px;animation-duration:7.5s;animation-delay:1s;">✦</div>
+  <div class="rising-sparkle" style="font-size:9px; left:480px;top:610px;--rise-dist:-310px;animation-duration:8.5s;animation-delay:3.8s;">✦</div>
+  <div class="rising-sparkle" style="font-size:10px;left:580px;top:603px;--rise-dist:-330px;animation-duration:7s;animation-delay:5.5s;">✦</div>
+
+  <!-- shooting stars -->
+  <div class="shoot" style="top:80px;left:-20px;--len:90px;--angle:-20deg;--travel:720px;--dur:4s;--delay:0s;"></div>
+  <div class="shoot" style="top:140px;left:-20px;--len:70px;--angle:-15deg;--travel:700px;--dur:5s;--delay:2.5s;"></div>
+  <div class="shoot" style="top:60px;left:-20px;--len:110px;--angle:-25deg;--travel:740px;--dur:4.5s;--delay:6s;"></div>
+  <div class="shoot" style="top:200px;left:-20px;--len:60px;--angle:-10deg;--travel:680px;--dur:6s;--delay:1.5s;"></div>
+  <div class="shoot" style="top:100px;left:-20px;--len:80px;--angle:-30deg;--travel:760px;--dur:3.8s;--delay:9s;"></div>
+  <div class="shoot" style="top:50px;left:-20px;--len:100px;--angle:-18deg;--travel:720px;--dur:5.5s;--delay:4s;"></div>
+  <div class="shoot" style="top:170px;left:-20px;--len:65px;--angle:-22deg;--travel:700px;--dur:4.2s;--delay:7.5s;"></div>
+  <div class="shoot" style="top:120px;left:-20px;--len:85px;--angle:-12deg;--travel:680px;--dur:6.5s;--delay:11s;"></div>
+
+  <!-- petals -->
+  <div class="petal" style="width:14px;height:20px;background:radial-gradient(ellipse,rgba(255,220,235,0.9),rgba(240,170,200,0.6) 70%);top:200px;left:32px;--r:-20deg;animation-duration:5s;"></div>
+  <div class="petal" style="width:12px;height:17px;background:radial-gradient(ellipse,rgba(255,210,230,0.9),rgba(230,170,210,0.6) 70%);top:210px;right:30px;--r:30deg;animation-duration:6s;animation-delay:1s;"></div>
+  <div class="petal" style="width:13px;height:19px;background:radial-gradient(ellipse,rgba(255,215,235,0.9),rgba(235,175,205,0.6) 70%);top:390px;left:28px;--r:15deg;animation-duration:7s;animation-delay:2s;"></div>
+  <div class="petal" style="width:11px;height:16px;background:radial-gradient(ellipse,rgba(255,225,240,0.9),rgba(240,185,215,0.6) 70%);top:400px;right:26px;--r:-25deg;animation-duration:5.5s;animation-delay:0.5s;"></div>
+
+  <!-- deco -->
+  <div class="deco" style="top:168px;left:50%;transform:translateX(-50%);font-size:12px;animation-delay:0s;">✦</div>
+  <div class="deco" style="bottom:88px;left:50%;transform:translateX(-50%);font-size:12px;animation-delay:1s;">✦</div>
+  <div class="deco" style="left:82px;top:50%;transform:translateY(-50%);font-size:12px;animation-delay:2s;">✦</div>
+  <div class="deco" style="right:82px;top:50%;transform:translateY(-50%);font-size:12px;animation-delay:3s;">✦</div>
+  <div class="deco" style="top:238px;left:66px;font-size:8px;animation-delay:1.2s;">♡</div>
+  <div class="deco" style="top:248px;right:64px;font-size:8px;animation-delay:2.2s;">♡</div>
+  <div class="deco" style="top:400px;left:70px;font-size:7px;animation-delay:0.6s;">♡</div>
+  <div class="deco" style="top:410px;right:68px;font-size:7px;animation-delay:1.6s;">♡</div>
+
+  <!-- moon phase countdown -->
+  <div class="moon-card" id="moonCard" title="Days until next full moon">
+    <div class="moon-icon" id="moonIcon"></div>
+    <div class="moon-text">
+      <div class="moon-label">Full Moon</div>
+      <div>
+        <span class="moon-val" id="moonDays">--</span>
+        <span class="moon-unit">days</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- header icon (swappable) -->
+  <div class="bow-wrap" id="headerIcon"></div>
+
+  <div class="sign-row" id="signRow" data-name="sagittarius">sagittarius</div>
+
+  <div class="clock-area">
+    <div class="big-clock" id="clock">00:00:00</div>
+    <div class="date-line" id="dateline">--- -- ----</div>
+  </div>
+
+  <div class="h-rule" style="top:200px;">
+    <div class="h-rule-line"></div>
+    <div class="h-rule-sym">✦</div>
+    <div class="h-rule-line r"></div>
+  </div>
+
+  <div class="chart-wrap">
+    <canvas id="chart" width="270" height="270"></canvas>
+  </div>
+
+  <div class="stat-card card-cpu">
+    <div class="card-label">CPU</div>
+    <div style="display:flex;align-items:baseline;gap:3px;">
+      <span class="card-val" id="cpu-temp">--</span><span class="card-unit">°C</span>
+    </div>
+    <div class="card-sub" id="cpu-val">-- %</div>
+    <div class="card-bar" id="cpu-segs"></div>
+  </div>
+
+  <div class="stat-card card-gpu">
+    <div class="card-label">GPU</div>
+    <div style="display:flex;align-items:baseline;gap:3px;">
+      <span class="card-val" id="gpu-temp">--</span><span class="card-unit">°C</span>
+    </div>
+    <div class="card-sub" id="gpu-val">-- %</div>
+    <div class="card-bar" id="gpu-segs"></div>
+  </div>
+
+  <div class="stat-card card-liq">
+    <div class="card-label">Liquid</div>
+    <div style="display:flex;align-items:baseline;gap:3px;">
+      <span class="card-val" id="liq-val">--</span><span class="card-unit">°C</span>
+    </div>
+    <div class="card-bar" id="liq-segs"></div>
+  </div>
+
+  <div class="ticker-wrap">
+    <div class="ticker-track">
+      <span class="ticker-text" id="t1">✦ consulting the stars...</span>
+      <span class="ticker-text" id="t2">✦ consulting the stars...</span>
+    </div>
+  </div>
+
+  <div class="angels">✦ protected by angels ✦</div>
+</div>
+</div>
+
+<!-- ─── SETTINGS MODAL ─── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✦ Customize ✦</div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+
+    <!-- zodiac picker -->
+    <div class="section">
+      <div class="section-label">Zodiac Sign</div>
+      <div class="sign-grid" id="signGrid"></div>
+    </div>
+
+    <!-- header icon picker -->
+    <div class="section">
+      <div class="section-label">Header Icon</div>
+      <div class="icon-grid" id="iconGrid"></div>
+    </div>
+
+    <!-- color presets -->
+    <div class="section">
+      <div class="section-label">Color Presets</div>
+      <div class="preset-row" id="presetRow"></div>
+    </div>
+
+    <!-- RGB sliders -->
+    <div class="section">
+      <div class="section-label">Custom Colors</div>
+      <div class="color-tabs">
+        <button class="color-tab active" data-slot="0">Primary</button>
+        <button class="color-tab" data-slot="1">Accent</button>
+        <button class="color-tab" data-slot="2">Glow</button>
+        <button class="color-tab" data-slot="3">Ring</button>
+      </div>
+      <div class="color-preview" id="colorPreview"></div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Red</span>
+            <span class="slider-val" id="rVal">232</span>
+          </div>
+          <input type="range" class="slider-r" id="sliderR" min="0" max="255" value="232">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Green</span>
+            <span class="slider-val" id="gVal">176</span>
+          </div>
+          <input type="range" class="slider-g" id="sliderG" min="0" max="255" value="176">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Blue</span>
+            <span class="slider-val" id="bVal">204</span>
+          </div>
+          <input type="range" class="slider-b" id="sliderB" min="0" max="255" value="204">
+        </div>
+      </div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">✦ Reset to Default ✦</button>
+    <div class="save-indicator" id="saveIndicator">✦ saved to your browser ✦</div>
+  </div>
+</div>
+
+<!-- Astronomy Engine - NASA-validated local ephemeris calculations, no API needed -->
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+
+<script>
+// ─── ZODIAC DATA ───
+const SIGNS = [
+  { key:'aries',       name:'Aries',       sym:'♈', api:'Aries' },
+  { key:'taurus',      name:'Taurus',      sym:'♉', api:'Taurus' },
+  { key:'gemini',      name:'Gemini',      sym:'♊', api:'Gemini' },
+  { key:'cancer',      name:'Cancer',      sym:'♋', api:'Cancer' },
+  { key:'leo',         name:'Leo',         sym:'♌', api:'Leo' },
+  { key:'virgo',       name:'Virgo',       sym:'♍', api:'Virgo' },
+  { key:'libra',       name:'Libra',       sym:'♎', api:'Libra' },
+  { key:'scorpio',     name:'Scorpio',     sym:'♏', api:'Scorpio' },
+  { key:'sagittarius', name:'Sagittarius', sym:'♐', api:'Sagittarius' },
+  { key:'capricorn',   name:'Capricorn',   sym:'♑', api:'Capricorn' },
+  { key:'aquarius',    name:'Aquarius',    sym:'♒', api:'Aquarius' },
+  { key:'pisces',      name:'Pisces',      sym:'♓', api:'Pisces' },
+];
+const SIGN_SYMS = SIGNS.map(s => s.sym);
+
+// ─── HEADER ICONS ───
+// each SVG sits in a 110x54 viewBox to match original bow dimensions
+const ICONS = {
+  bow: {
+    name: 'Bow',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55 27 C48 14, 18 7, 8 19 C0 28, 12 42, 30 36 C42 32, 52 29, 55 27Z" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.8)" stroke-width="1"/>
+      <path d="M55 27 C62 14, 92 7, 102 19 C110 28, 98 42, 80 36 C68 32, 58 29, 55 27Z" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.8)" stroke-width="1"/>
+      <path d="M55 27 C50 32, 37 44, 29 51" stroke="rgba(255,255,255,0.65)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M55 27 C60 32, 73 44, 81 51" stroke="rgba(255,255,255,0.65)" stroke-width="1" stroke-linecap="round"/>
+      <ellipse cx="55" cy="27" rx="5" ry="5" fill="rgba(255,240,248,0.7)"/>
+      <ellipse cx="55" cy="27" rx="3" ry="3" fill="#fff"/>
+    </svg>`
+  },
+  moon: {
+    name: 'Moon',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55 5 A22 22 0 1 0 55 49 A16 19 0 1 1 55 5 Z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+      <path d="M22 12 L24 17 L29 19 L24 21 L22 26 L20 21 L15 19 L20 17 Z" fill="#fff"/>
+      <path d="M85 20 L86 23 L89 24 L86 25 L85 28 L84 25 L81 24 L84 23 Z" fill="#fff"/>
+      <path d="M82 38 L83 40 L85 41 L83 42 L82 44 L81 42 L79 41 L81 40 Z" fill="#fff"/>
+    </svg>`
+  },
+  butterfly: {
+    name: 'Butterfly',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(55,27)">
+        <path d="M0 -5 C-18 -20, -38 -18, -36 -3 C-38 10, -20 13, 0 0 Z" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+        <path d="M0 -5 C18 -20, 38 -18, 36 -3 C38 10, 20 13, 0 0 Z" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+        <path d="M0 0 C-13 3, -25 7, -27 17" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+        <path d="M0 0 C13 3, 25 7, 27 17" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+        <line x1="0" y1="-14" x2="0" y2="14" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M-2 -17 C-4 -20, -1 -21, -2 -17" stroke="rgba(255,255,255,0.9)" stroke-width="1" fill="none"/>
+        <path d="M2 -17 C4 -20, 1 -21, 2 -17" stroke="rgba(255,255,255,0.9)" stroke-width="1" fill="none"/>
+      </g>
+    </svg>`
+  },
+  sun: {
+    name: 'Sun',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="27" r="11" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>
+      <g stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linecap="round">
+        <line x1="55" y1="8" x2="55" y2="2"/>
+        <line x1="55" y1="46" x2="55" y2="52"/>
+        <line x1="36" y1="27" x2="30" y2="27"/>
+        <line x1="74" y1="27" x2="80" y2="27"/>
+        <line x1="42" y1="14" x2="38" y2="10"/>
+        <line x1="68" y1="14" x2="72" y2="10"/>
+        <line x1="42" y1="40" x2="38" y2="44"/>
+        <line x1="68" y1="40" x2="72" y2="44"/>
+      </g>
+    </svg>`
+  },
+  crown: {
+    name: 'Crown',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M28 44 L32 18 L44 32 L55 14 L66 32 L78 18 L82 44 Z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linejoin="round"/>
+      <rect x="28" y="44" width="54" height="5" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+      <circle cx="32" cy="18" r="2" fill="#fff"/>
+      <circle cx="55" cy="14" r="2.5" fill="#fff"/>
+      <circle cx="78" cy="18" r="2" fill="#fff"/>
+    </svg>`
+  },
+  heart: {
+    name: 'Winged Heart',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55 46 C43 38, 34 31, 34 23 C34 17, 40 14, 45 17 C48 19, 52 22, 55 26 C58 22, 62 19, 65 17 C70 14, 76 17, 76 23 C76 31, 67 38, 55 46 Z" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>
+      <path d="M34 23 C22 18, 16 25, 18 30 C20 36, 30 36, 34 30" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+      <path d="M76 23 C88 18, 94 25, 92 30 C90 36, 80 36, 76 30" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+      <path d="M22 26 L28 27 M20 30 L27 31" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+      <path d="M88 26 L82 27 M90 30 L83 31" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+    </svg>`
+  },
+  constellation: {
+    name: 'Constellation',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="rgba(255,255,255,0.8)" stroke-width="1" stroke-linecap="round" fill="none">
+        <line x1="20" y1="38" x2="36" y2="20"/>
+        <line x1="36" y1="20" x2="54" y2="28"/>
+        <line x1="54" y1="28" x2="72" y2="12"/>
+        <line x1="72" y1="12" x2="86" y2="34"/>
+        <line x1="54" y1="28" x2="64" y2="44"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="20" cy="38" r="2"/>
+        <circle cx="36" cy="20" r="2.5"/>
+        <circle cx="54" cy="28" r="2"/>
+        <circle cx="72" cy="12" r="3"/>
+        <circle cx="86" cy="34" r="2"/>
+        <circle cx="64" cy="44" r="2"/>
+      </g>
+      <g fill="rgba(255,255,255,0.6)">
+        <path d="M28 8 L29 10 L31 11 L29 12 L28 14 L27 12 L25 11 L27 10 Z"/>
+        <path d="M82 48 L83 50 L85 51 L83 52 L82 54 L81 52 L79 51 L81 50 Z"/>
+      </g>
+    </svg>`
+  },
+  lightning: {
+    name: 'Lightning',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60 5 L40 28 L52 28 L44 49 L70 22 L57 22 Z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>`
+  },
+  infinity: {
+    name: 'Infinity',
+    svg: `<svg viewBox="0 0 110 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 27 C30 15, 45 15, 55 27 C65 39, 80 39, 80 27 C80 15, 65 15, 55 27 C45 39, 30 39, 30 27 Z" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linejoin="round"/>
+      <g fill="rgba(255,255,255,0.75)">
+        <path d="M22 12 L23 14 L25 15 L23 16 L22 18 L21 16 L19 15 L21 14 Z"/>
+        <path d="M88 40 L89 42 L91 43 L89 44 L88 46 L87 44 L85 43 L87 42 Z"/>
+      </g>
+    </svg>`
+  },
+};
+const ICON_KEYS = ['bow','moon','butterfly','sun','crown','heart','constellation','lightning','infinity'];
+
+// ─── COLOR PRESETS ───
+// each preset: [primary, accent, glow, ring] as [r,g,b]
+const PRESETS = [
+  { name:'Rose',     colors:[[232,176,204],[212,168,224],[255,160,210],[255,140,200]] },
+  { name:'Ocean',    colors:[[140,180,230],[160,210,235],[120,200,255],[100,180,255]] },
+  { name:'Sunset',   colors:[[255,170,130],[255,140,170],[255,120,150],[255,100,140]] },
+  { name:'Forest',   colors:[[160,210,170],[190,220,180],[140,230,180],[120,220,160]] },
+  { name:'Lavender', colors:[[200,180,240],[220,200,245],[180,160,255],[160,140,255]] },
+  { name:'Gold',     colors:[[245,220,150],[240,200,120],[255,200,100],[255,180,80]] },
+  { name:'Noir',     colors:[[80,90,120],[120,100,140],[180,140,220],[200,120,240]] },
+  { name:'Candy',    colors:[[255,200,220],[255,180,210],[255,160,200],[255,140,190]] },
+];
+
+// ─── STATE ───
+let state = {
+  sign: 'sagittarius',
+  icon: 'bow',
+  colors: JSON.parse(JSON.stringify(PRESETS[0].colors)),
+  activeSlot: 0,
+};
+
+// ─── PERSISTENCE ───
+const STORAGE_KEY = 'zodiacDisplayState';
+
+let saveTimeout;
+function saveState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      sign: state.sign,
+      icon: state.icon,
+      colors: state.colors,
+    }));
+    // flash the indicator
+    const ind = document.getElementById('saveIndicator');
+    if (ind) {
+      ind.classList.add('visible');
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => ind.classList.remove('visible'), 1500);
+    }
+  } catch(e) {
+    console.warn('Could not save state:', e);
+  }
+}
+
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.sign && SIGNS.find(s => s.key === saved.sign)) state.sign = saved.sign;
+    if (saved.icon && ICONS[saved.icon]) state.icon = saved.icon;
+    if (Array.isArray(saved.colors) && saved.colors.length >= 3) {
+      // ensure 4 color slots (backwards compat for old 3-slot saves)
+      state.colors = saved.colors.length === 4
+        ? saved.colors
+        : [...saved.colors, PRESETS[0].colors[3]];
+    }
+  } catch(e) {
+    console.warn('Could not load saved state:', e);
+  }
+}
+
+// ─── APPLY COLORS ───
+function rgb(arr, a=1){ return `rgba(${arr[0]},${arr[1]},${arr[2]},${a})`; }
+
+function applyTheme(){
+  const [p, a, g, r] = state.colors;
+  const root = document.documentElement;
+
+  // build background gradient using the three main colors
+  const bg = `
+    radial-gradient(ellipse at 30% 20%, ${rgb(p,0.85)} 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, ${rgb(a,0.8)} 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 70%, ${rgb(p,0.75)} 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, ${rgb(a,0.65)} 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 80%, ${rgb(g,0.55)} 0%, transparent 45%),
+    linear-gradient(135deg, ${rgb(p,0.85)} 0%, ${rgb(a,0.8)} 30%, ${rgb(p,0.75)} 55%, ${rgb(g,0.7)} 80%, ${rgb(a,0.85)} 100%)
+  `;
+  root.style.setProperty('--bg-gradient', bg);
+  root.style.setProperty('--glow-soft', rgb(g, 0.6));
+  root.style.setProperty('--glow-medium', rgb(g, 0.8));
+  root.style.setProperty('--glow-strong', rgb(g, 0.9));
+  root.style.setProperty('--glow-deep', rgb(g, 0.7));
+
+  // ── ring glow colors ──
+  const ringColor = r || g; // fallback if preset is old 3-color format
+  root.style.setProperty('--ring-color', rgb(ringColor, 0.95));
+  root.style.setProperty('--ring-glow', rgb(ringColor, 0.8));
+  root.style.setProperty('--ring-glow-outer', rgb(ringColor, 0.5));
+  root.style.setProperty('--ring-inner', rgb(ringColor, 0.35));
+
+  // ── chrome text colors derived from primary + glow ──
+  // helper: blend rgb toward white or black
+  const lighten = (c, amt) => c.map(v => Math.round(v + (255 - v) * amt));
+  const darken  = (c, amt) => c.map(v => Math.round(v * (1 - amt)));
+
+  const chromeLight = lighten(p, 0.85);
+  const chromeMid   = lighten(p, 0.15);
+  const chromeDark  = darken(p, 0.4);
+  const chromeDeep  = darken(p, 0.6);
+  const chromeShadow = darken(p, 0.65);
+
+  root.style.setProperty('--chrome-light', rgb(chromeLight));
+  root.style.setProperty('--chrome-mid',   rgb(chromeMid));
+  root.style.setProperty('--chrome-dark',  rgb(chromeDark));
+  root.style.setProperty('--chrome-deep',  rgb(chromeDeep));
+  root.style.setProperty('--chrome-shadow', rgb(chromeShadow, 0.55));
+
+  root.style.setProperty('--chrome-edge',   rgb(g, 0.6));
+  root.style.setProperty('--chrome-edge-r', rgb(g, 0.5));
+  root.style.setProperty('--chrome-edge-l', rgb(a, 0.5));
+}
+
+function applySign(){
+  const s = SIGNS.find(x => x.key === state.sign);
+  const row = document.getElementById('signRow');
+  row.textContent = s.name.toLowerCase();
+  row.setAttribute('data-name', s.name.toLowerCase());
+  drawChart();
+  fetchHoroscope();
+}
+
+function applyIcon(){
+  const icon = ICONS[state.icon];
+  document.getElementById('headerIcon').innerHTML = icon ? icon.svg : '';
+}
+
+function buildIconGrid(){
+  const grid = document.getElementById('iconGrid');
+  grid.innerHTML = '';
+  ICON_KEYS.forEach(key => {
+    const icon = ICONS[key];
+    const el = document.createElement('div');
+    el.className = 'icon-opt' + (key === state.icon ? ' active' : '');
+    el.innerHTML = `<div class="icon-preview">${icon.svg}</div><div class="icon-nm">${icon.name}</div>`;
+    el.addEventListener('click', () => {
+      state.icon = key;
+      buildIconGrid();
+      applyIcon();
+      saveState();
+    });
+    grid.appendChild(el);
+  });
+}
+
+// ─── MODAL UI ───
+function buildSignGrid(){
+  const grid = document.getElementById('signGrid');
+  grid.innerHTML = '';
+  SIGNS.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'sign-opt' + (s.key === state.sign ? ' active' : '');
+    el.innerHTML = `<div class="sym">${s.sym}</div><div class="nm">${s.name.slice(0,3)}</div>`;
+    el.addEventListener('click', () => {
+      state.sign = s.key;
+      buildSignGrid();
+      applySign();
+      saveState();
+    });
+    grid.appendChild(el);
+  });
+}
+
+function buildPresets(){
+  const row = document.getElementById('presetRow');
+  row.innerHTML = '';
+  PRESETS.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'preset';
+    const [c1, c2, c3] = p.colors;
+    el.style.background = `linear-gradient(135deg, ${rgb(c1)}, ${rgb(c2)}, ${rgb(c3)})`;
+    el.innerHTML = `<div class="preset-name">${p.name}</div>`;
+    el.addEventListener('click', () => {
+      state.colors = JSON.parse(JSON.stringify(p.colors));
+      applyTheme();
+      syncSliders();
+      updatePresetActive();
+      saveState();
+    });
+    row.appendChild(el);
+  });
+}
+
+function updatePresetActive(){
+  const row = document.getElementById('presetRow');
+  [...row.children].forEach((el, i) => {
+    const match = JSON.stringify(PRESETS[i].colors) === JSON.stringify(state.colors);
+    el.classList.toggle('active', match);
+  });
+}
+
+function syncSliders(){
+  const [r, g, b] = state.colors[state.activeSlot];
+  document.getElementById('sliderR').value = r;
+  document.getElementById('sliderG').value = g;
+  document.getElementById('sliderB').value = b;
+  document.getElementById('rVal').textContent = r;
+  document.getElementById('gVal').textContent = g;
+  document.getElementById('bVal').textContent = b;
+  document.getElementById('colorPreview').style.background = `rgb(${r},${g},${b})`;
+}
+
+function onSliderChange(){
+  const r = +document.getElementById('sliderR').value;
+  const g = +document.getElementById('sliderG').value;
+  const b = +document.getElementById('sliderB').value;
+  state.colors[state.activeSlot] = [r, g, b];
+  document.getElementById('rVal').textContent = r;
+  document.getElementById('gVal').textContent = g;
+  document.getElementById('bVal').textContent = b;
+  document.getElementById('colorPreview').style.background = `rgb(${r},${g},${b})`;
+  applyTheme();
+  updatePresetActive();
+  saveState();
+}
+
+document.getElementById('sliderR').addEventListener('input', onSliderChange);
+document.getElementById('sliderG').addEventListener('input', onSliderChange);
+document.getElementById('sliderB').addEventListener('input', onSliderChange);
+
+// color tabs
+document.querySelectorAll('.color-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.color-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.activeSlot = +tab.dataset.slot;
+    syncSliders();
+  });
+});
+
+// modal open/close
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.add('active');
+});
+document.getElementById('modalClose').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('active');
+});
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'modalOverlay') document.getElementById('modalOverlay').classList.remove('active');
+});
+
+// reset
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.sign = 'sagittarius';
+  state.icon = 'bow';
+  state.colors = JSON.parse(JSON.stringify(PRESETS[0].colors));
+  state.activeSlot = 0;
+  document.querySelectorAll('.color-tab').forEach((t,i) => t.classList.toggle('active', i === 0));
+  applyTheme();
+  applySign();
+  applyIcon();
+  buildSignGrid();
+  buildIconGrid();
+  syncSliders();
+  updatePresetActive();
+  saveState();
+});
+
+// ─── SEGS ───
+const N = 8;
+function buildSegs(){
+  ['cpu-segs','gpu-segs','liq-segs'].forEach(id => {
+    const el = document.getElementById(id);
+    for (let i = 0; i < N; i++){
+      const s = document.createElement('div');
+      s.className = 'seg';
+      el.appendChild(s);
+    }
+  });
+}
+function fillSegs(id, pct, cls){
+  const segs = document.getElementById(id).children;
+  const n = Math.round((pct/100)*N);
+  for (let i = 0; i < N; i++) segs[i].className = 'seg' + (i < n ? ' '+cls : '');
+}
+
+// ─── CLOCK ───
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0')+':'+
+    String(now.getMinutes()).padStart(2,'0')+':'+
+    String(now.getSeconds()).padStart(2,'0');
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('dateline').textContent =
+    days[now.getDay()]+' '+String(now.getDate()).padStart(2,'0')+' '+months[now.getMonth()]+' '+now.getFullYear();
+}
+
+// ─── ASTRONOMY ───
+// Uses Astronomy Engine (cosinekitty) - NASA-validated, runs in browser, no API needed
+// Accuracy: better than 1 arcminute for all bodies
+function toRad(d){return d*Math.PI/180;}
+function normDeg(d){return((d%360)+360)%360;}
+
+const PLANET_COLORS = {
+  Sun:     'rgba(255,240,180,0.95)',
+  Moon:    'rgba(220,220,255,0.95)',
+  Mercury: 'rgba(255,200,160,0.95)',
+  Venus:   'rgba(255,180,220,0.95)',
+  Mars:    'rgba(255,140,140,0.95)',
+  Jupiter: 'rgba(255,220,160,0.95)',
+  Saturn:  'rgba(200,180,140,0.95)',
+};
+const PLANET_SYMS = {
+  Sun:'☉', Moon:'☽', Mercury:'☿', Venus:'♀',
+  Mars:'♂', Jupiter:'♃', Saturn:'♄',
+};
+
+function getPlanets(){
+  // if library hasn't loaded yet, return empty (chart will redraw after load)
+  if (typeof Astronomy === 'undefined') return [];
+
+  const date = new Date();
+  const bodies = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+  const results = [];
+
+  for (const body of bodies) {
+    try {
+      let lon;
+      if (body === 'Sun') {
+        // Sun: use SunPosition which gives apparent geocentric ecliptic coordinates
+        lon = Astronomy.SunPosition(date).elon;
+      } else if (body === 'Moon') {
+        // Moon: EclipticGeoMoon returns geocentric ecliptic position
+        lon = Astronomy.EclipticGeoMoon(date).lon;
+      } else {
+        // Planets: geocentric vector → equatorial → ecliptic
+        const vec = Astronomy.GeoVector(body, date, true);
+        const ecl = Astronomy.Ecliptic(vec);
+        lon = ecl.elon;
+      }
+      results.push({
+        sym: PLANET_SYMS[body],
+        name: body,
+        lon: normDeg(lon),
+        color: PLANET_COLORS[body],
+      });
+    } catch(e) {
+      console.warn(`Failed to compute ${body}:`, e.message);
+    }
+  }
+  return results;
+}
+
+// wait for library to load, then redraw chart with real data
+function waitForAstronomy(){
+  if (typeof Astronomy !== 'undefined') {
+    drawChart();
+  } else {
+    setTimeout(waitForAstronomy, 100);
+  }
+}
+
+// ─── DRAW CHART ───
+function drawChart(){
+  const canvas=document.getElementById('chart');
+  const ctx=canvas.getContext('2d');
+  const W=270,H=270;const cx=W/2,cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  const R_outer=128,R_signs=112,R_inner=88,R_mid=72,R_core=44;
+
+  const segColors=[
+    'rgba(255,180,200,0.25)','rgba(255,210,180,0.25)','rgba(210,230,255,0.25)',
+    'rgba(180,255,220,0.2)', 'rgba(255,240,180,0.25)','rgba(220,200,255,0.25)',
+    'rgba(255,190,210,0.25)','rgba(180,210,255,0.25)','rgba(255,200,180,0.25)',
+    'rgba(200,220,255,0.25)','rgba(210,255,240,0.2)', 'rgba(255,210,230,0.25)',
+  ];
+
+  for(let i=0;i<12;i++){
+    const startA=toRad(i*30-90);
+    const endA=toRad((i+1)*30-90);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R_outer,startA,endA);
+    ctx.closePath();
+    ctx.fillStyle=segColors[i];
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.25)';
+    ctx.lineWidth=0.5;
+    ctx.stroke();
+  }
+
+  ctx.beginPath();ctx.arc(cx,cy,R_outer,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,R_signs,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=0.8;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,R_inner,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.8;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,R_mid,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=0.5;ctx.stroke();
+
+  // highlight selected sign segment
+  const selectedIdx = SIGNS.findIndex(s => s.key === state.sign);
+  if (selectedIdx >= 0){
+    const startA=toRad(selectedIdx*30-90);
+    const endA=toRad((selectedIdx+1)*30-90);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R_outer,startA,endA);
+    ctx.closePath();
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.fill();
+  }
+
+  const coreGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,R_core);
+  coreGrad.addColorStop(0,'rgba(255,240,248,0.55)');
+  coreGrad.addColorStop(0.5,'rgba(255,200,230,0.2)');
+  coreGrad.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.arc(cx,cy,R_core,0,Math.PI*2);
+  ctx.fillStyle=coreGrad;ctx.fill();
+
+  // selected sign glyph in core instead of heart
+  const selected = SIGNS.find(s => s.key === state.sign);
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.font='bold 26px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.shadowColor='rgba(255,180,210,0.9)';
+  ctx.shadowBlur=10;
+  ctx.fillText(selected.sym, 0, 0);
+  ctx.restore();
+  ctx.shadowBlur=0;
+
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let i=0;i<12;i++){
+    const angle=toRad(i*30+15-90);
+    const r=(R_signs+R_outer)/2;
+    const x=cx+r*Math.cos(angle);
+    const y=cy+r*Math.sin(angle);
+    const isActive = i === selectedIdx;
+    ctx.beginPath();
+    ctx.arc(x,y,11,0,Math.PI*2);
+    ctx.fillStyle = isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.22)';
+    ctx.shadowColor='rgba(255,200,230,0.6)';
+    ctx.shadowBlur = isActive ? 10 : 6;
+    ctx.fill();
+    ctx.strokeStyle = isActive ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = isActive ? 1.2 : 0.8;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.font='bold 13px "Cinzel", serif';
+    ctx.fillStyle='rgba(255,255,255,0.95)';
+    ctx.shadowColor='rgba(255,180,210,0.9)';
+    ctx.shadowBlur=5;
+    ctx.fillText(SIGN_SYMS[i],x,y+0.5);
+    ctx.shadowBlur=0;
+  }
+
+  for(let i=0;i<12;i++){
+    const angle=toRad(i*30-90);
+    ctx.beginPath();
+    ctx.moveTo(cx+R_inner*Math.cos(angle),cy+R_inner*Math.sin(angle));
+    ctx.lineTo(cx+R_outer*Math.cos(angle),cy+R_outer*Math.sin(angle));
+    ctx.strokeStyle='rgba(255,255,255,0.2)';
+    ctx.lineWidth=0.5;ctx.stroke();
+  }
+
+  const planets=getPlanets();
+  for(let i=0;i<planets.length;i++){
+    for(let j=i+1;j<planets.length;j++){
+      const diff=Math.abs(normDeg(planets[i].lon-planets[j].lon));
+      const d=diff>180?360-diff:diff;
+      let aspectColor=null;
+      if(Math.abs(d-0)<8||Math.abs(d-360)<8)   aspectColor='rgba(255,240,180,0.25)';
+      else if(Math.abs(d-60)<6)                  aspectColor='rgba(180,255,200,0.2)';
+      else if(Math.abs(d-90)<7)                  aspectColor='rgba(255,160,160,0.2)';
+      else if(Math.abs(d-120)<7)                 aspectColor='rgba(180,220,255,0.22)';
+      else if(Math.abs(d-180)<8)                 aspectColor='rgba(255,200,180,0.2)';
+      if(aspectColor){
+        const a1=toRad(planets[i].lon-90);
+        const a2=toRad(planets[j].lon-90);
+        const r=R_mid-4;
+        ctx.beginPath();
+        ctx.moveTo(cx+r*Math.cos(a1),cy+r*Math.sin(a1));
+        ctx.lineTo(cx+r*Math.cos(a2),cy+r*Math.sin(a2));
+        ctx.strokeStyle=aspectColor;
+        ctx.lineWidth=0.8;
+        ctx.setLineDash([2,3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
+  planets.forEach((p)=>{
+    const angle=toRad(p.lon-90);
+    const pr=R_inner-8;
+    const px=cx+pr*Math.cos(angle);
+    const py=cy+pr*Math.sin(angle);
+    ctx.beginPath();
+    ctx.arc(px,py,5,0,Math.PI*2);
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color;
+    ctx.shadowBlur=8;
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,255,255,0.6)';
+    ctx.lineWidth=0.8;
+    ctx.stroke();
+    const lineStart=R_mid-2;
+    ctx.beginPath();
+    ctx.moveTo(cx+lineStart*Math.cos(angle),cy+lineStart*Math.sin(angle));
+    ctx.lineTo(px,py);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';
+    ctx.lineWidth=0.5;ctx.stroke();
+    const labelR=pr+14;
+    const lx=cx+labelR*Math.cos(angle);
+    const ly=cy+labelR*Math.sin(angle);
+    ctx.font='9px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    ctx.shadowColor=p.color;ctx.shadowBlur=5;
+    ctx.fillText(p.sym,lx,ly);
+    ctx.shadowBlur=0;
+  });
+}
+
+// ─── HOROSCOPE ───
+const FALLBACKS = {
+  aries:       { msg: "Your fire burns bright today — take the lead and chase what you want",         num: 9,  color: "Crimson Red",   mood: "Bold" },
+  taurus:      { msg: "Slow down and savor the sweetness of the moment — indulgence is earned",       num: 6,  color: "Emerald Green", mood: "Grounded" },
+  gemini:      { msg: "A conversation sparks something unexpected — follow your curiosity",            num: 5,  color: "Yellow",        mood: "Playful" },
+  cancer:      { msg: "Trust your intuition today — your heart already knows the answer",              num: 2,  color: "Silver",        mood: "Tender" },
+  leo:         { msg: "Shine loud and proud — the spotlight was made for someone like you",            num: 1,  color: "Gold",          mood: "Radiant" },
+  virgo:       { msg: "Small details align into something beautiful — trust your careful work",        num: 4,  color: "Sage Green",    mood: "Focused" },
+  libra:       { msg: "Balance finds you naturally today — embrace beauty in every corner",            num: 7,  color: "Soft Pink",     mood: "Harmonious" },
+  scorpio:     { msg: "Dig deeper than the surface — transformation is calling your name",             num: 8,  color: "Deep Burgundy", mood: "Magnetic" },
+  sagittarius: { msg: "Adventure awaits you today — trust your instincts and aim high",                num: 9,  color: "Rose Gold",     mood: "Adventurous" },
+  capricorn:   { msg: "Your steady climb is paying off — keep building what matters",                   num: 10, color: "Forest Green",  mood: "Determined" },
+  aquarius:    { msg: "Your vision is ahead of the curve — share it with someone today",               num: 11, color: "Electric Blue", mood: "Inspired" },
+  pisces:      { msg: "Dreams and reality blur in the prettiest way today — let yourself wander",      num: 3,  color: "Seafoam",       mood: "Dreamy" },
+};
+
+async function fetchHoroscope(){
+  const s = SIGNS.find(x => x.key === state.sign);
+  try{
+    const res=await fetch(`https://horoscope-app-api.vercel.app/api/v1/get-horoscope/daily?sign=${s.api}&day=TODAY`);
+    const json=await res.json();const d=json.data;
+    const text=`✦ ${d.horoscope_data}   ·   Lucky Number: ${d.lucky_number}   ·   Lucky Color: ${d.lucky_color}   ·   Mood: ${d.mood}   ·   `;
+    document.getElementById('t1').textContent=text;
+    document.getElementById('t2').textContent=text;
+  }catch(e){
+    const f = FALLBACKS[state.sign] || FALLBACKS.sagittarius;
+    const t=`✦ ${f.msg}   ·   Lucky Number: ${f.num}   ·   Lucky Color: ${f.color}   ·   Mood: ${f.mood}   ·   `;
+    document.getElementById('t1').textContent=t;
+    document.getElementById('t2').textContent=t;
+  }
+}
+
+// ─── CAM ───
+window.nzxt={v1:{onMonitoringDataUpdate:function(data){
+  const cpu=data.cpus&&data.cpus[0];
+  if(cpu){const u=Math.round(cpu.load*100),t=Math.round(cpu.temperature);document.getElementById('cpu-val').textContent=u+' %';document.getElementById('cpu-temp').textContent=t;fillSegs('cpu-segs',u,'c');}
+  const gpu=data.gpus&&(data.gpus[1]||data.gpus[0]);
+  if(gpu){const u=Math.round(gpu.load*100),t=Math.round(gpu.temperature);document.getElementById('gpu-val').textContent=u+' %';document.getElementById('gpu-temp').textContent=t;fillSegs('gpu-segs',u,'g');}
+  if(data.kraken){const l=Math.round(data.kraken.liquidTemperature);document.getElementById('liq-val').textContent=l;fillSegs('liq-segs',Math.min(((l-20)/35)*100,100),'l');}
+}}};
+
+// ─── MOON PHASE ───
+// Returns moon phase as a fraction from 0 (new) to 1 (next new), with 0.5 being full.
+// Based on known new moon reference: Jan 6, 2000 18:14 UTC
+function moonPhase(date){
+  const synodic = 29.530588853; // days in lunar cycle
+  const refNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14)).getTime();
+  const elapsed = (date.getTime() - refNewMoon) / (1000 * 60 * 60 * 24);
+  return ((elapsed % synodic) + synodic) % synodic / synodic;
+}
+
+function daysUntilFullMoon(date){
+  const synodic = 29.530588853;
+  const phase = moonPhase(date); // 0-1
+  // full moon is at phase = 0.5
+  let daysToFull;
+  if (phase < 0.5) {
+    daysToFull = (0.5 - phase) * synodic;
+  } else {
+    daysToFull = (1.5 - phase) * synodic;
+  }
+  return Math.round(daysToFull);
+}
+
+function renderMoonIcon(phase){
+  // phase: 0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter
+  // draw a circle with a curved shadow representing the illuminated portion
+  const r = 13;
+  const cx = 14, cy = 14;
+  // illumination: 0 at new, 1 at full, 0 at new again
+  const illum = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+  const waxing = phase < 0.5;
+
+  // build SVG: full white circle + dark overlay showing shadowed portion
+  // using two arcs to create the crescent/gibbous shape
+  const shadowX = r * (1 - 2 * illum); // x-offset of the inner ellipse edge
+  const absShadowX = Math.abs(shadowX);
+  const largeArc = 0;
+  const sweepOuter = waxing ? 0 : 1;
+  const sweepInner = (illum > 0.5) ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
+
+  return `
+    <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <!-- dark base -->
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(40,20,60,0.55)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+      <!-- illuminated portion -->
+      <path d="
+        M ${cx} ${cy - r}
+        A ${r} ${r} 0 ${largeArc} ${sweepOuter} ${cx} ${cy + r}
+        A ${absShadowX} ${r} 0 ${largeArc} ${sweepInner} ${cx} ${cy - r}
+        Z
+      " fill="rgba(255,245,230,0.95)"/>
+      <!-- glowy highlight -->
+      <ellipse cx="${cx - 2}" cy="${cy - 4}" rx="3" ry="2" fill="rgba(255,255,255,0.6)"/>
+    </svg>
+  `;
+}
+
+function updateMoon(){
+  const now = new Date();
+  const phase = moonPhase(now);
+  const days = daysUntilFullMoon(now);
+  document.getElementById('moonIcon').innerHTML = renderMoonIcon(phase);
+  document.getElementById('moonDays').textContent = days;
+  // handle "0 days" = it's full moon today
+  const unit = document.querySelector('.moon-unit');
+  if (days === 0) {
+    document.getElementById('moonDays').textContent = '✦';
+    unit.textContent = 'tonight';
+  } else if (days === 1) {
+    unit.textContent = 'day';
+  } else {
+    unit.textContent = 'days';
+  }
+}
+
+// ─── INIT ───
+loadState();
+buildSegs();
+buildSignGrid();
+buildIconGrid();
+buildPresets();
+applyTheme();
+applySign();
+applyIcon();
+syncSliders();
+updatePresetActive();
+updateClock();
+updateMoon();
+waitForAstronomy();
+setInterval(updateClock,1000);
+setInterval(updateMoon, 60*60*1000);
+setInterval(drawChart,60*60*1000);
+setInterval(fetchHoroscope,6*60*60*1000);
+</script>
+</body>
+</html>
